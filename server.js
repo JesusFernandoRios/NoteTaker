@@ -7,9 +7,15 @@ const path = require("path");
 const app = express();
 const PORT = 3000;
 
-//Setting up Data parsing
-app.use(express.urlencoded({extended: true}));
+// Use a middleware to parse the JSON data
+app.use(express.urlencoded({ extended: true}));
 app.use(express.json());
+//what folder the browser can see
+app.use(express.static("public"));
+
+
+
+
 
 // returns homepage
 app.get("/", function(req, res){
@@ -18,15 +24,58 @@ app.get("/", function(req, res){
 
 // Note Route
 app.get('/notes', function (req, res){
-  res.sendfile(path.join(__dirname,"/public/notes.html"))
+  res.sendFile(path.join(__dirname,"/public/notes.html"))
 })
 
-//API routes
+
+
+
+
+////////API routes
 app.get('/api/notes', function(req, res){
-  let info = req.body
+  return res.sendFile(path.join(__dirname, "db/db.json"));
+});
 
-  console.log(info)
+////////
+app.post('/api/notes', function(req, res){
+  let savedNotes = JSON.parse(fs.readFileSync("./db/db.json", "utf8"));
+
+  let newNote = req.body;
+
+  let uniqueID = (savedNotes.length).toString();
+
+  newNote.id = uniqueID;
+  savedNotes.push(newNote);
+
+  fs.writeFileSync("db/db.json", JSON.stringify(savedNotes));
+  console.log("Note saved to db.json. Content: ", newNote);
+  res.json(savedNotes);
+});
+////////
+
+app.delete('/api/notes/:id', function(req, res){
+  let savedNotes = JSON.parse(fs.readFileSync("db/db.json", "utf8"));
+
+  let noteID = req.params.id;
+
+  let newID = 0;
+
+  console.log(`Deleting note with ID ${noteID}`);
+
+  savedNotes = savedNotes.filter(currNote => {
+
+        return currNote.id != noteID;
+    })
+    
+    for (currNote of savedNotes) {
+        currNote.id = newID.toString();
+        newID++;
+    }
+
+    fs.writeFileSync("db/db.json", JSON.stringify(savedNotes));
+    res.json(savedNotes);
 })
+////////
 
 app.listen(PORT, function() {
     console.log("App listening on PORT " + PORT);
